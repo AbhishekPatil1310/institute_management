@@ -1,194 +1,157 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reception Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h2>Reception Dashboard</h2>
+<div class="container">
+    <h2>Reception Dashboard</h2>
+    <nav><a href="/logout">Logout</a></nav>
+    <hr>
 
-<nav>
-    <a href="/logout">Logout</a>
-</nav>
+    <div class="card">
+        <h3>Search Student</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="search">
+            <label>Mobile Number</label><br>
+            <input type="text" name="mobile" value="{{ request.form.get('mobile', '') }}" placeholder="Enter phone number..." required>
+            <button type="submit" class="btn">Search</button>
+        </form>
+    </div>
 
-<hr>
+    {% if error %}<p style="color:red;"><strong>{{ error }}</strong></p>{% endif %}
+    {% if message %}<p style="color:green;"><strong>{{ message }}</strong></p>{% endif %}
 
-<!-- ========================= -->
-<!-- SEARCH STUDENT -->
-<!-- ========================= -->
-<h3>Search Student</h3>
-<form method="POST">
-    <input type="hidden" name="action" value="search">
+    {% if student %}
 
-    <label>Mobile Number</label><br>
-    <input type="text" name="mobile" required>
-    <br><br>
+    <div class="card">
+        <h3>Student Profile</h3>
+        <p>
+            <strong>Name:</strong> {{ student.name }}<br>
+            <strong>Student ID:</strong> {{ student.student_id }}<br>
+            <strong>Mobile:</strong> {{ student.mobile }}
+        </p>
+    </div>
 
-    <button type="submit">Search</button>
-</form>
+    <h3>Existing Admissions</h3>
+    {% for adm in admissions %}
+    <div class="card">
+        <h4>Batch: {{ adm.batch.batch_code }} ({{ adm.batch.course_name }})</h4>
+        <p>
+            <strong>Status:</strong> {{ adm.status }} | 
+            <strong>Total:</strong> ₹{{ adm.total_fee }} | 
+            <strong>Paid:</strong> ₹{{ adm.paid_amount }} | 
+            <strong>Pending:</strong> <span style="color:red">₹{{ adm.pending_amount }}</span>
+        </p>
 
-<hr>
+        <h5>Payment History</h5>
+        {% if adm.payments %}
+        <table>
+            <tr>
+                <th>Receipt</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Action</th>
+            </tr>
+            {% for p in adm.payments %}
+            <tr>
+                <td>RCP-{{ "%06d"|format(p.id) }}</td>
+                <td>{{ p.payment_date }}</td>
+                <td>₹{{ p.amount }}</td>
+                <td>{{ p.received_in }}</td>
+                <td><a href="/reception/receipt/{{ p.id }}" target="_blank">View</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
 
-{% if error %}
-<p style="color:red;"><strong>{{ error }}</strong></p>
-{% endif %}
+        {% if adm.pending_amount > 0 %}
+        <div class="pay-box">
+            <strong>Pay Installment:</strong>
+            <form method="POST" style="display: inline-flex; gap: 10px; align-items: center; margin-top: 10px;">
+                <input type="hidden" name="action" value="pay_pending">
+                <input type="hidden" name="admission_id" value="{{ adm.id }}">
+                <input type="hidden" name="student_id" value="{{ student.id }}">
+                <input type="hidden" name="mobile" value="{{ student.mobile }}">
 
-{% if message %}
-<p style="color:green;"><strong>{{ message }}</strong></p>
-{% endif %}
-
-{% if student %}
-
-<!-- ========================= -->
-<!-- STUDENT PROFILE -->
-<!-- ========================= -->
-<h3>Student Profile</h3>
-<p>
-    <strong>Name:</strong> {{ student.name }}<br>
-    <strong>Student ID:</strong> {{ student.student_id }}<br>
-    <strong>Mobile:</strong> {{ student.mobile }}
-</p>
-
-<hr>
-
-<!-- ========================= -->
-<!-- ADMISSIONS & FEES -->
-<!-- ========================= -->
-<h3>Admissions & Fee Status</h3>
-
-{% for adm in admissions %}
-<h4>Batch: {{ adm.batch.batch_code }} ({{ adm.batch.course_name }})</h4>
-
-<p>
-    <strong>Status:</strong> {{ adm.status }}<br>
-    <strong>Total Fee:</strong> ₹{{ adm.total_fee }}<br>
-    <strong>Paid:</strong> ₹{{ adm.paid_amount }}<br>
-    <strong>Pending:</strong> ₹{{ adm.pending_amount }}
-</p>
-
-{% if adm.remarks %}
-<p><strong>Remark:</strong> {{ adm.remarks }}</p>
-{% endif %}
-
-<!-- ========================= -->
-<!-- PAYMENT HISTORY -->
-<!-- ========================= -->
-<h5>Payment History</h5>
-
-{% if adm.payments %}
-<table border="1" cellpadding="6">
-    <tr>
-        <th>Receipt</th>
-        <th>Date</th>
-        <th>Amount</th>
-        <th>Received Via</th>
-        <th>Action</th>
-    </tr>
-    {% for p in adm.payments %}
-    <tr>
-        <td>RCP-{{ "%06d"|format(p.id) }}</td>
-        <td>{{ p.payment_date }}</td>
-        <td>₹{{ p.amount }}</td>
-        <td>{{ p.received_in }}</td>
-        <td>
-            <a href="/reception/receipt/{{ p.id }}" target="_blank">
-                View / Print
-            </a>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>No payments recorded yet.</p>
-{% endif %}
-
-<hr>
-
-<!-- ========================= -->
-<!-- PAY PENDING FEE -->
-<!-- ========================= -->
-{% if adm.pending_amount > 0 %}
-<h5>Pay Pending Fee</h5>
-
-<form method="POST">
-    <input type="hidden" name="action" value="pay_pending">
-    <input type="hidden" name="admission_id" value="{{ adm.id }}">
-
-    <label>Amount</label><br>
-    <input type="number"
-           name="paid_amount"
-           max="{{ adm.pending_amount }}"
-           required>
-    <br><br>
-
-    <label>Payment Method</label><br>
-    {% for ps in payment_sources %}
-        <input type="radio"
-               name="received_in"
-               value="{{ ps.payment_source.id }}"
-               {% if loop.first %}checked{% endif %}>
-        {{ ps.payment_source.name }}
-        {% if ps.priority == 1 %}(Primary QR){% endif %}
-        {% if ps.priority == 2 %}(Secondary QR){% endif %}
-        {% if ps.priority == 0 %}(Cash){% endif %}
-        <br>
+                <input type="number" name="paid_amount" max="{{ adm.pending_amount }}" placeholder="Amount" required style="width: 100px;">
+                
+                <select name="received_in" required>
+                    <option value="">-- Method --</option>
+                    {% if existing_batch_sources[adm.batch_.id] %}
+                        {% for ps in existing_batch_sources[adm.batch_id] %}
+                        <option value="{{ ps.payment_source.id }}">
+                            {{ ps.payment_source.name }} 
+                            {% if ps.priority == 1 %}(QR 1){% elif ps.priority == 2 %}(QR 2){% else %}(Cash){% endif %}
+                        </option>
+                        {% endfor %}
+                    {% else %}
+                        <option disabled>No methods linked</option>
+                    {% endif %}
+                </select>
+                <button type="submit" class="btn btn-pay">Record Payment</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
     {% endfor %}
 
-    <br>
-    <button type="submit">Record Payment</button>
-</form>
-{% endif %}
+    <div class="card" style="background-color: #eefbff;">
+        <h3>New Batch Admission</h3>
+        <form method="POST" id="newAdmissionForm">
+            <input type="hidden" name="action" id="formAction" value="new_admission">
+            <input type="hidden" name="student_id" value="{{ student.id }}">
+            <input type="hidden" name="mobile" value="{{ student.mobile }}">
 
-<hr>
-{% endfor %}
+            <label>Select Batch</label><br>
+            <select name="batch_id" required onchange="document.getElementById('formAction').value='preload'; this.form.submit();">
+                <option value="">-- Choose Batch --</option>
+                {% for batch in batches %}
+                <option value="{{ batch.id }}" {% if request.form.get('batch_id')|int == batch.id %}selected{% endif %}>
+                    {{ batch.batch_code }} - {{ batch.course_name }} (₹{{ batch.total_fee }})
+                </option>
+                {% endfor %}
+            </select>
+            <br>
 
-<!-- ========================= -->
-<!-- NEW BATCH ADMISSION -->
-<!-- ========================= -->
-<h3>New Batch Admission</h3>
+            {% if request.form.get('batch_id') %}
+            <div class="payment-section">
+                <label>Paid Amount</label><br>
+                <input type="number" name="paid_amount" placeholder="Enter amount..." required>
+                <br><br>
 
-<form method="POST">
-    <input type="hidden" name="action" value="new_admission">
-    <input type="hidden" name="student_id" value="{{ student.id }}">
+                <label><strong>Select Payment Method for New Admission:</strong></label><br>
+                {% if payment_sources %}
+                    {% for ps in payment_sources %}
+                        <input type="radio" name="received_in" value="{{ ps.payment_source.id }}" required>
+                        {{ ps.payment_source.name }}
+                        {% if ps.priority == 1 %}(Primary QR){% elif ps.priority == 2 %}(Secondary QR){% else %}(Cash){% endif %}
+                        <br>
+                    {% endfor %}
+                {% else %}
+                    <p style="color:red;">No payment sources linked to this batch.</p>
+                {% endif %}
 
-    <label>Select Batch</label><br>
-    <select name="batch_id" required>
-        {% for batch in batches %}
-        <option value="{{ batch.id }}">
-            {{ batch.batch_code }} - {{ batch.course_name }} (₹{{ batch.total_fee }})
-        </option>
-        {% endfor %}
-    </select>
-    <br><br>
+                <br>
+                <label>Remark (optional)</label><br>
+                <textarea name="remarks" placeholder="Concession details, etc." style="width:100%;"></textarea>
+                <br><br>
 
-    <label>Paid Amount</label><br>
-    <input type="number" name="paid_amount" required>
-    <br><br>
+                <button type="submit" class="btn" onclick="document.getElementById('formAction').value='new_admission'">Confirm Admission</button>
+            </div>
+            {% else %}
+            <p style="color: #666; font-style: italic; margin-top: 10px;">Select a batch above to enter payment details for a new course.</p>
+            {% endif %}
+        </form>
+    </div>
 
-    <label>Payment Method</label><br>
-    {% for ps in payment_sources %}
-        <input type="radio"
-               name="received_in"
-               value="{{ ps.payment_source.id }}"
-               {% if loop.first %}checked{% endif %}>
-        {{ ps.payment_source.name }}
-        {% if ps.priority == 1 %}(Primary QR){% endif %}
-        {% if ps.priority == 2 %}(Secondary QR){% endif %}
-        {% if ps.priority == 0 %}(Cash){% endif %}
-        <br>
-    {% endfor %}
-
-    <br>
-
-    <label>Remark (optional)</label><br>
-    <textarea name="remarks"
-        placeholder="Concession / reference / pending reason"></textarea>
-    <br><br>
-
-    <button type="submit">Confirm Admission</button>
-</form>
-
-{% endif %}
+    {% endif %}
+</div>
 
 </body>
 </html>

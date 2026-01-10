@@ -2,65 +2,85 @@
 <html>
 <head>
     <title>Payment Sources</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f9; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2, h3 { color: #333; }
+        hr { border: 0; height: 1px; background: #ddd; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background: #f8f8f8; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        form { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], select { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        @media (max-width: 600px) {
+            body { margin: 0; }
+            .container { padding: 15px; }
+            button { width: 100%; }
+        }
+    </style>
 </head>
 <body>
 
-<h2>Admin – Payment Sources</h2>
+<div class="container">
+    <h2>Admin – Payment Sources</h2>
+    <hr>
 
-<hr>
+    <h3>Add New Payment Source</h3>
+    <form method="POST">
+        <label>Source Name:</label>
+        <input type="text" name="name" required>
 
-<h3>Add New Payment Source</h3>
+        <label>Mode:</label>
+        <select name="mode" required>
+            <option value="CASH">Cash</option>
+            <option value="QR">QR</option>
+        </select>
 
-<form method="POST">
-    <label>Source Name:</label><br>
-    <input type="text" name="name" required><br><br>
+        <label>QR Image Path (only for QR):</label>
+        <input type="text" name="qr_image_path" placeholder="static/qr/gpay.png">
 
-    <label>Mode:</label><br>
-    <select name="mode" required>
-        <option value="CASH">Cash</option>
-        <option value="QR">QR</option>
-    </select><br><br>
+        <button type="submit">Add Payment Source</button>
+    </form>
+    <hr>
 
-    <label>QR Image Path (only for QR):</label><br>
-    <input type="text" name="qr_image_path" placeholder="static/qr/gpay.png"><br><br>
-
-    <button type="submit">Add Payment Source</button>
-</form>
-
-<hr>
-
-<h3>Existing Payment Sources</h3>
-
-<table border="1" cellpadding="8">
-    <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Mode</th>
-        <th>QR Image</th>
-        <th>Status</th>
-        <th>Created At</th>
-    </tr>
-
-    {% for ps in payment_sources %}
-    <tr>
-        <td>{{ ps.id }}</td>
-        <td>{{ ps.name }}</td>
-        <td>{{ ps.mode }}</td>
-        <td>
-            {% if ps.qr_image_path %}
-                {{ ps.qr_image_path }}
-            {% else %}
-                -
-            {% endif %}
-        </td>
-        <td>{{ "Active" if ps.is_active else "Inactive" }}</td>
-        <td>{{ ps.created_at.date() }}</td>
-    </tr>
-    {% endfor %}
-</table>
-
-<br>
-<a href="/admin/dashboard">⬅ Back to Dashboard</a>
+    <h3>Existing Payment Sources</h3>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Mode</th>
+            <th>QR Image</th>
+            <th>Status</th>
+            <th>Created At</th>
+        </tr>
+        {% for ps in payment_sources %}
+        <tr>
+            <td>{{ ps.id }}</td>
+            <td>{{ ps.name }}</td>
+            <td>{{ ps.mode }}</td>
+            <td>
+                {% if ps.qr_image_path %}
+                    {{ ps.qr_image_path }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>{{ "Active" if ps.is_active else "Inactive" }}</td>
+            <td>{{ ps.created_at.date() }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+    <a href="/admin/dashboard">⬅ Back to Dashboard</a>
+</div>
 
 </body>
 </html>

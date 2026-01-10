@@ -2,87 +2,87 @@
 <html>
 <head>
     <title>Admin Daily Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h2>Daily Admission & Payment Report</h2>
+<div class="container">
+    <h2>Daily Admission & Payment Report</h2>
 
-<nav>
-    <a href="/admin/dashboard">Dashboard</a> |
-    <a href="/logout">Logout</a>
-</nav>
+    <nav>
+        <a href="/admin/dashboard">Dashboard</a> |
+        <a href="/logout">Logout</a>
+    </nav>
+    <hr>
 
-<hr>
+    <form method="POST">
+        <label>Select Date:</label>
+        <input type="date" name="report_date" value="{{ selected_date }}">
+        <button type="submit">View</button>
+    </form>
+    <hr>
 
-<form method="POST">
-    <label>Select Date:</label>
-    <input type="date" name="report_date" value="{{ selected_date }}">
-    <button type="submit">View</button>
-</form>
+    <h3>Date: {{ selected_date }}</h3>
 
-<hr>
+    <!-- ================= ADMISSIONS ================= -->
+    <h3>New Admissions</h3>
 
-<h3>Date: {{ selected_date }}</h3>
+    {% if admissions %}
+    <table>
+        <tr>
+            <th>Student</th>
+            <th>Batch</th>
+            <th>Total Fee</th>
+            <th>Paid</th>
+            <th>Pending</th>
+            <th>Status</th>
+        </tr>
+        {% for adm in admissions %}
+        <tr>
+            <td>{{ adm.student.name }}</td>
+            <td>{{ adm.batch.batch_code }}</td>
+            <td>₹{{ adm.total_fee }}</td>
+            <td>₹{{ adm.paid_amount }}</td>
+            <td>₹{{ adm.pending_amount }}</td>
+            <td>{{ adm.status }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>No admissions on this date.</p>
+    {% endif %}
+    <hr>
 
-<!-- ================= ADMISSIONS ================= -->
-<h3>New Admissions</h3>
+    <!-- ================= PAYMENTS ================= -->
+    <h3>Payments Received</h3>
 
-{% if admissions %}
-<table border="1" cellpadding="6">
-    <tr>
-        <th>Student</th>
-        <th>Batch</th>
-        <th>Total Fee</th>
-        <th>Paid</th>
-        <th>Pending</th>
-        <th>Status</th>
-    </tr>
-    {% for adm in admissions %}
-    <tr>
-        <td>{{ adm.student.name }}</td>
-        <td>{{ adm.batch.batch_code }}</td>
-        <td>₹{{ adm.total_fee }}</td>
-        <td>₹{{ adm.paid_amount }}</td>
-        <td>₹{{ adm.pending_amount }}</td>
-        <td>{{ adm.status }}</td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>No admissions on this date.</p>
-{% endif %}
+    {% if payments %}
+    <table>
+        <tr>
+            <th>Receipt No</th>
+            <th>Student</th>
+            <th>Batch</th>
+            <th>Amount</th>
+            <th>Mode</th>
+        </tr>
+        {% for p in payments %}
+        <tr>
+            <td>RCP-{{ "%06d"|format(p.id) }}</td>
+            <td>{{ p.admission.student.name }}</td>
+            <td>{{ p.admission.batch.batch_code }}</td>
+            <td>₹{{ p.amount }}</td>
+            <td>{{ p.payment_mode }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>No payments received.</p>
+    {% endif %}
+    <hr>
 
-<hr>
-
-<!-- ================= PAYMENTS ================= -->
-<h3>Payments Received</h3>
-
-{% if payments %}
-<table border="1" cellpadding="6">
-    <tr>
-        <th>Receipt No</th>
-        <th>Student</th>
-        <th>Batch</th>
-        <th>Amount</th>
-        <th>Mode</th>
-    </tr>
-    {% for p in payments %}
-    <tr>
-        <td>RCP-{{ "%06d"|format(p.id) }}</td>
-        <td>{{ p.admission.student.name }}</td>
-        <td>{{ p.admission.batch.batch_code }}</td>
-        <td>₹{{ p.amount }}</td>
-        <td>{{ p.payment_mode }}</td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>No payments received.</p>
-{% endif %}
-
-<hr>
-
-<h3>Total Collection: ₹{{ total_collection }}</h3>
+    <div class="total">Total Collection: ₹{{ total_collection }}</div>
+</div>
 
 </body>
 </html>

@@ -2,55 +2,56 @@
 <html>
 <head>
     <title>Admin – Batch Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h2>Create New Batch</h2>
+<div class="container">
+    <h2>Create New Batch</h2>
+    <form method="POST">
+        <label>Batch Code</label>
+        <input name="batch_code" required>
 
-<form method="POST">
-    <label>Batch Code</label><br>
-    <input name="batch_code" required><br><br>
+        <label>Course Name</label>
+        <input name="course_name" required>
 
-    <label>Course Name</label><br>
-    <input name="course_name" required><br><br>
+        <label>Total Fee</label>
+        <input type="number" name="total_fee" required>
 
-    <label>Total Fee</label><br>
-    <input type="number" name="total_fee" required><br><br>
+        <label>Start Date</label>
+        <input type="date" name="start_date" required>
 
-    <label>Start Date</label><br>
-    <input type="date" name="start_date" required><br><br>
+        <label>End Date</label>
+        <input type="date" name="end_date">
 
-    <label>End Date</label><br>
-    <input type="date" name="end_date"><br><br>
+        <button type="submit">Create Batch</button>
+    </form>
+    <hr>
 
-    <button type="submit">Create Batch</button>
-</form>
-
-<hr>
-
-<h2>Existing Batches</h2>
-
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Batch Code</th>
-        <th>Course</th>
-        <th>Fee</th>
-        <th>Start</th>
-        <th>End</th>
-        <th>Status</th>
-    </tr>
-
-    {% for batch in batches %}
-    <tr>
-        <td>{{ batch.batch_code }}</td>
-        <td>{{ batch.course_name }}</td>
-        <td>{{ batch.total_fee }}</td>
-        <td>{{ batch.start_date }}</td>
-        <td>{{ batch.end_date }}</td>
-        <td>{{ batch.status }}</td>
-    </tr>
-    {% endfor %}
-</table>
+    <h2>Existing Batches</h2>
+    <table>
+        <tr>
+            <th>Batch Code</th>
+            <th>Course</th>
+            <th>Fee</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Status</th>
+        </tr>
+        {% for batch in batches %}
+        <tr>
+            <td>{{ batch.batch_code }}</td>
+            <td>{{ batch.course_name }}</td>
+            <td>{{ batch.total_fee }}</td>
+            <td>{{ batch.start_date }}</td>
+            <td>{{ batch.end_date }}</td>
+            <td>{{ batch.status }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="/admin/dashboard">⬅ Back to Dashboard</a>
+</div>
 
 </body>
 </html>
