@@ -2,68 +2,78 @@
 <html>
 <head>
     <title>Batch Payment Configuration</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<div class="container">
-    <h2>Admin – Batch Payment Configuration</h2>
-    <hr>
+<h2>Admin – Batch Payment Configuration</h2>
 
-    <form method="POST">
-        <label>Select Batch:</label>
-        <select name="batch_id" required>
-            {% for b in batches %}
-            <option value="{{ b.id }}">
-                {{ b.batch_code }} – {{ b.course_name }}
-            </option>
-            {% endfor %}
-        </select>
-        <br><br>
+<hr>
 
-        <label>Primary QR (Only ONE):</label>
-        {% for qr in qr_sources %}
-            <input type="radio" name="primary_qr" value="{{ qr.id }}" required> {{ qr.name }}<br>
+<form method="POST">
+    <label>Select Batch:</label><br>
+    <select name="batch_id" required>
+        {% for b in batches %}
+        <option value="{{ b.id }}">
+            {{ b.batch_code }} – {{ b.course_name }}
+        </option>
         {% endfor %}
-        <br>
+    </select>
 
-        <label>Secondary QRs (Fallback options):</label>
-        {% for qr in qr_sources %}
-            <input type="checkbox" name="secondary_qrs" value="{{ qr.id }}"> {{ qr.name }}<br>
-        {% endfor %}
-        <br>
+    <br><br>
 
-        <button type="submit">Save Configuration</button>
-    </form>
-    <hr>
+    <label>Primary QR (Only ONE):</label><br>
+    {% for qr in qr_sources %}
+        <input type="radio"
+               name="primary_qr"
+               value="{{ qr.id }}"
+               required>
+        {{ qr.name }}<br>
+    {% endfor %}
 
-    <h3>Current Configuration</h3>
-    <table>
-        <tr>
-            <th>Batch</th>
-            <th>Payment Source</th>
-            <th>Priority</th>
-        </tr>
-        {% for m in mappings %}
-        <tr>
-            <td>{{ m.batch.batch_code }}</td>
-            <td>{{ m.payment_source.name }}</td>
-            <td>
-                {% if m.priority == 0 %}
-                    Cash
-                {% elif m.priority == 1 %}
-                    Primary QR
-                {% else %}
-                    Secondary QR
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
     <br>
-    <a href="/admin/dashboard">⬅ Back to Dashboard</a>
-</div>
+
+    <label>Secondary QRs (Fallback options):</label><br>
+    {% for qr in qr_sources %}
+        <input type="checkbox"
+               name="secondary_qrs"
+               value="{{ qr.id }}">
+        {{ qr.name }}<br>
+    {% endfor %}
+
+    <br>
+    <button type="submit">Save Configuration</button>
+</form>
+
+<hr>
+
+<h3>Current Configuration</h3>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Batch</th>
+        <th>Payment Source</th>
+        <th>Priority</th>
+    </tr>
+
+    {% for m in mappings %}
+    <tr>
+        <td>{{ m.batch.batch_code }}</td>
+        <td>{{ m.payment_source.name }}</td>
+        <td>
+            {% if m.priority == 0 %}
+                Cash
+            {% elif m.priority == 1 %}
+                Primary QR
+            {% else %}
+                Secondary QR
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<br>
+<a href="/admin/dashboard">⬅ Back to Dashboard</a>
 
 </body>
 </html>

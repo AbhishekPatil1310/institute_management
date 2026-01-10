@@ -2,101 +2,80 @@
 <html>
 <head>
     <title>Payment Receipt</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; }
-        .receipt-container { max-width: 800px; margin: 30px auto; background: white; padding: 40px; box-shadow: 0 0 15px rgba(0,0,0,0.05); border-radius: 10px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h2 { margin: 0; font-size: 28px; color: #333; }
-        .header p { margin: 5px 0 0; font-size: 16px; color: #666; }
-        .details-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
-        .details-box { width: 48%; }
-        h3 { font-size: 18px; color: #333; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 15px; }
-        p { line-height: 1.7; color: #555; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px 15px; border: 1px solid #ddd; }
-        th { background-color: #f8f8f8; text-align: left; font-weight: 600; }
-        .footer { text-align: center; margin-top: 40px; color: #888; }
-        .print-btn { display: block; width: 200px; margin: 30px auto; padding: 12px; background-color: #0d6efd; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; text-align: center; }
-        .print-btn:hover { background-color: #0b5ed7; }
-        .signature { margin-top: 50px; }
-
-        @media print {
-            body { background-color: #fff; }
-            .receipt-container { margin: 0; box-shadow: none; border-radius: 0; }
-            .print-btn { display: none; }
-        }
-    </style>
 </head>
 <body>
 
-<div class="receipt-container">
-    <div class="header">
-        <h2>Sharada Academy</h2>
-        <p>Payment Receipt</p>
-    </div>
+<h2 style="text-align:center;">Sharada Academy</h2>
+<p style="text-align:center;">Payment Receipt</p>
 
-    <div class="details-section">
-        <div class="details-box">
-            <p>
-                <strong>Receipt No:</strong> RCP-{{ "%06d"|format(payment.id) }}<br>
-                <strong>Date:</strong> {{ payment.payment_date }}
-            </p>
-        </div>
-    </div>
+<hr>
 
-    <div class="details-section">
-        <div class="details-box">
-            <h3>Student Details</h3>
-            <p>
-                <strong>Name:</strong> {{ student.name }}<br>
-                <strong>Student ID:</strong> {{ student.student_id }}<br>
-                <strong>Mobile:</strong> {{ student.mobile }}
-            </p>
-        </div>
-        <div class="details-box">
-            <h3>Batch Details</h3>
-            <p>
-                <strong>Batch Code:</strong> {{ admission.batch.batch_code }}<br>
-                <strong>Course:</strong> {{ admission.batch.course_name }}
-            </p>
-        </div>
-    </div>
+<p>
+    <strong>Receipt No:</strong> RCP-{{ "%06d"|format(payment.id) }}<br>
+    <strong>Date:</strong> {{ payment.payment_date }}
+</p>
 
-    <h3>Payment Details</h3>
-    <table>
-        <tr>
-            <th>Total Fee</th>
-            <td>₹{{ admission.total_fee }}</td>
-        </tr>
-        <tr>
-            <th>Paid This Time</th>
-            <td><strong>₹{{ payment.amount }}</strong></td>
-        </tr>
-        <tr>
-            <th>Total Paid</th>
-            <td>₹{{ admission.paid_amount }}</td>
-        </tr>
-        <tr>
-            <th>Pending Fee</th>
-            <td>₹{{ admission.pending_amount }}</td>
-        </tr>
-        <tr>
-            <th>Payment Mode</th>
-            <td>{{ payment.payment_mode }}</td>
-        </tr>
-    </table>
+<hr>
 
-    <div class="footer">
-        <p>This is a computer-generated receipt. No signature is required.</p>
-        <div class="signature">
-            ___________________________<br>
-            Authorized Signatory
-        </div>
-    </div>
-</div>
+<h3>Student Details</h3>
+<p>
+    <strong>Name:</strong> {{ student.name }}<br>
+    <strong>Student ID:</strong> {{ student.student_id }}<br>
+    <strong>Mobile:</strong> {{ student.mobile }}
+</p>
 
-<button class="print-btn" onclick="window.print()">Print Receipt</button>
+<hr>
+
+<h3>Batch Details</h3>
+<p>
+    <strong>Batch Code:</strong> {{ admission.batch.batch_code }}<br>
+    <strong>Course:</strong> {{ admission.batch.course_name }}
+</p>
+
+<hr>
+
+<h3>Payment Details</h3>
+
+<table border="1" cellpadding="8" width="100%">
+    <tr>
+        <th align="left">Total Fee</th>
+        <td>₹{{ admission.total_fee }}</td>
+    </tr>
+    <tr>
+        <th align="left">Paid This Time</th>
+        <td><strong>₹{{ payment.amount }}</strong></td>
+    </tr>
+    <tr>
+        <th align="left">Total Paid</th>
+        <td>₹{{ admission.paid_amount }}</td>
+    </tr>
+    <tr>
+        <th align="left">Pending Fee</th>
+        <td>₹{{ admission.pending_amount }}</td>
+    </tr>
+    <tr>
+        <th align="left">Payment Mode</th>
+        <td>{{ payment.payment_mode }}</td>
+    </tr>
+</table>
+
+<hr>
+
+<p>
+    This is a computer-generated receipt.<br>
+    No signature is required.
+</p>
+
+<br>
+
+<p>
+    ___________________________<br>
+    Authorized Signatory
+</p>
+
+<br>
+
+<button onclick="window.print()">Print Receipt</button>
 
 </body>
 </html>
