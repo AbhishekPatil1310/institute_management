@@ -1,0 +1,181 @@
+from flask import Blueprint, render_template, request
+from flask_login import login_required, current_user
+from datetime import date
+
+from models import (
+    db,
+    Student,
+    Batch,
+    Admission,
+    FeePayment,
+    BatchPaymentSource,
+)
+
+reception_bp = Blueprint("reception", __name__, url_prefix="/reception")
+
+
+@reception_bp.route("/dashboard", methods=["GET", "POST"])
+@login_required
+def dashboard():
+    if current_user.role != "reception":
+        return "Access Denied", 403
+
+    student = None
+    admissions = []
+    batches = Batch.query.filter_by(status="Active").all()
+
+    message = ""
+    error = ""
+
+    # 🔑 PRELOAD payment sources when batch is selected
+    payment_sources = []
+    selected_batch_id = request.form.get("batch_id")
+
+    if selected_batch_id:
+        try:
+            payment_sources = (
+                BatchPaymentSource.query
+                .filter_by(batch_id=int(selected_batch_id))
+                .order_by(BatchPaymentSource.priority)
+                .all()
+            )
+        except ValueError:
+            payment_sources = []
+
+    if request.method == "POST":
+        action = request.form.get("action")
+
+        # --------------------
+        # SEARCH STUDENT
+        # --------------------
+        if action == "search":
+            mobile = request.form.get("mobile")
+            student = Student.query.filter_by(mobile=mobile).first()
+
+            if not student:
+                error = "No student record found. Ask student to fill admission form."
+            else:
+                admissions = Admission.query.filter_by(
+                    student_id=student.id
+                ).all()
+
+        # --------------------
+        # PRELOAD (BATCH SELECTED)
+        # --------------------
+        elif action == "preload":
+            student = Student.query.get(request.form.get("student_id"))
+            admissions = Admission.query.filter_by(
+                student_id=student.id
+            ).all()
+
+        # --------------------
+        # NEW ADMISSION
+        # --------------------
+        elif action == "new_admission":
+            student_id = request.form.get("student_id")
+            batch_id = int(request.form.get("batch_id"))
+            paid_amount = int(request.form.get("paid_amount"))
+            received_in = request.form.get("received_in")
+            remarks = request.form.get("remarks")
+
+            student = Student.query.get(student_id)
+            batch = Batch.query.get(batch_id)
+
+            existing_admission = Admission.query.filter_by(
+                student_id=student.id,
+                batch_id=batch.id
+            ).first()
+
+            if existing_admission:
+                error = "Student is already admitted to this batch."
+            else:
+                admission = Admission(
+                    student_id=student.id,
+                    batch_id=batch.id,
+                    total_fee=batch.total_fee,
+                    paid_amount=paid_amount,
+                    pending_amount=batch.total_fee - paid_amount,
+                    remarks=remarks,
+                    admission_date=date.today(),
+                    status="Completed" if paid_amount >= batch.total_fee else "Active"
+                )
+                db.session.add(admission)
+                db.session.commit()
+
+                payment = FeePayment(
+                    admission_id=admission.id,
+                    amount=paid_amount,
+                    received_in=received_in
+                )
+                db.session.add(payment)
+                db.session.commit()
+
+                message = "Admission completed successfully"
+                admissions = Admission.query.filter_by(
+                    student_id=student.id
+                ).all()
+
+        # --------------------
+        # PAY PENDING FEE
+        # --------------------
+        elif action == "pay_pending":
+            admission_id = int(request.form.get("admission_id"))
+            paid_amount = int(request.form.get("paid_amount"))
+            received_in = request.form.get("received_in")
+
+            admission = Admission.query.get(admission_id)
+
+            if paid_amount > admission.pending_amount:
+                error = f"Amount exceeds pending fee (₹{admission.pending_amount})"
+            else:
+                payment = FeePayment(
+                    admission_id=admission.id,
+                    amount=paid_amount,
+                    received_in=received_in
+                )
+                db.session.add(payment)
+
+                admission.paid_amount += paid_amount
+                admission.pending_amount -= paid_amount
+
+                if admission.pending_amount == 0:
+                    admission.status = "Completed"
+
+                db.session.commit()
+
+                message = f"Payment recorded. Receipt No: RCP-{payment.id:06d}"
+                student = Student.query.get(admission.student_id)
+                admissions = Admission.query.filter_by(
+                    student_id=student.id
+                ).all()
+
+    return render_template(
+        "reception_dashboard.html",
+        student=student,
+        admissions=admissions,
+        batches=batches,
+        payment_sources=payment_sources,
+        message=message,
+        error=error
+    )
+
+
+# =========================
+# RECEIPT VIEW
+# =========================
+@reception_bp.route("/receipt/<int:payment_id>")
+@login_required
+def view_receipt(payment_id):
+    if current_user.role not in ["reception", "admin"]:
+        return "Access Denied", 403
+
+    payment = FeePayment.query.get_or_404(payment_id)
+    admission = Admission.query.get(payment.admission_id)
+    student = Student.query.get(admission.student_id)
+
+    return render_template(
+        "receipt.html",
+        payment=payment,
+        admission=admission,
+        student=student
+    )

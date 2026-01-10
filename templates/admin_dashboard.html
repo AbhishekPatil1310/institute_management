@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+</head>
+<body>
+
+<h2>Admin Dashboard</h2>
+
+<nav>
+    <a href="/admin/daily-report">Daily Report</a> |
+    <a href="/admin/batches">Manage Batches</a> |
+    <a href="/admin/payment-sources">Payment Sources</a> |
+    <a href="/admin/batch-payment-sources">Batch Payment Settings</a> |
+    <a href="/change-password">Change Password</a> |
+    <a href="/logout">Logout</a>
+</nav>
+
+<hr>
+
+<h3>Overall Summary</h3>
+<p><strong>Total Collection:</strong> ₹{{ total_collection }}</p>
+<p><strong>Total Pending Fees:</strong> ₹{{ total_pending }}</p>
+
+<hr>
+
+<h3>Batch-wise Summary</h3>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Batch Code</th>
+        <th>Course</th>
+        <th>Students</th>
+        <th>Collected</th>
+        <th>Pending</th>
+    </tr>
+
+    {% for b in batch_stats %}
+    <tr>
+        <td>{{ b.batch_code }}</td>
+        <td>{{ b.course_name }}</td>
+        <td>{{ b.student_count or 0 }}</td>
+        <td>₹{{ b.paid_total or 0 }}</td>
+        <td>₹{{ b.pending_total or 0 }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

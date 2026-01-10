@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin – Batch Management</title>
+</head>
+<body>
+
+<h2>Create New Batch</h2>
+
+<form method="POST">
+    <label>Batch Code</label><br>
+    <input name="batch_code" required><br><br>
+
+    <label>Course Name</label><br>
+    <input name="course_name" required><br><br>
+
+    <label>Total Fee</label><br>
+    <input type="number" name="total_fee" required><br><br>
+
+    <label>Start Date</label><br>
+    <input type="date" name="start_date" required><br><br>
+
+    <label>End Date</label><br>
+    <input type="date" name="end_date"><br><br>
+
+    <button type="submit">Create Batch</button>
+</form>
+
+<hr>
+
+<h2>Existing Batches</h2>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Batch Code</th>
+        <th>Course</th>
+        <th>Fee</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Status</th>
+    </tr>
+
+    {% for batch in batches %}
+    <tr>
+        <td>{{ batch.batch_code }}</td>
+        <td>{{ batch.course_name }}</td>
+        <td>{{ batch.total_fee }}</td>
+        <td>{{ batch.start_date }}</td>
+        <td>{{ batch.end_date }}</td>
+        <td>{{ batch.status }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

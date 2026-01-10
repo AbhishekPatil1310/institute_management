@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Sources</title>
+</head>
+<body>
+
+<h2>Admin – Payment Sources</h2>
+
+<hr>
+
+<h3>Add New Payment Source</h3>
+
+<form method="POST">
+    <label>Source Name:</label><br>
+    <input type="text" name="name" required><br><br>
+
+    <label>Mode:</label><br>
+    <select name="mode" required>
+        <option value="CASH">Cash</option>
+        <option value="QR">QR</option>
+    </select><br><br>
+
+    <label>QR Image Path (only for QR):</label><br>
+    <input type="text" name="qr_image_path" placeholder="static/qr/gpay.png"><br><br>
+
+    <button type="submit">Add Payment Source</button>
+</form>
+
+<hr>
+
+<h3>Existing Payment Sources</h3>
+
+<table border="1" cellpadding="8">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Mode</th>
+        <th>QR Image</th>
+        <th>Status</th>
+        <th>Created At</th>
+    </tr>
+
+    {% for ps in payment_sources %}
+    <tr>
+        <td>{{ ps.id }}</td>
+        <td>{{ ps.name }}</td>
+        <td>{{ ps.mode }}</td>
+        <td>
+            {% if ps.qr_image_path %}
+                {{ ps.qr_image_path }}
+            {% else %}
+                -
+            {% endif %}
+        </td>
+        <td>{{ "Active" if ps.is_active else "Inactive" }}</td>
+        <td>{{ ps.created_at.date() }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<br>
+<a href="/admin/dashboard">⬅ Back to Dashboard</a>
+
+</body>
+</html>

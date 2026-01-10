@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Dashboard</title>
+</head>
+<body>
+
+<h2>Student Dashboard</h2>
+
+<nav>
+    <a href="/change-password">Change Password</a> |
+    <a href="/logout">Logout</a>
+</nav>
+
+<hr>
+
+<h3>Profile</h3>
+<p>
+    <strong>Name:</strong> {{ student.name }}<br>
+    <strong>Student ID:</strong> {{ student.student_id }}<br>
+    <strong>Email:</strong> {{ student.email }}<br>
+    <strong>Mobile:</strong> {{ student.mobile }}
+</p>
+
+<hr>
+
+<h3>Admissions & Fees</h3>
+
+{% if admissions %}
+    {% for adm in admissions %}
+        <h4>Batch: {{ adm.batch.batch_code }} ({{ adm.batch.course_name }})</h4>
+
+        <p>
+            <strong>Status:</strong> {{ adm.status }}<br>
+            <strong>Total Fee:</strong> ₹{{ adm.total_fee }}<br>
+            <strong>Total Paid:</strong> ₹{{ adm.paid_amount }}<br>
+            <strong>Pending:</strong> ₹{{ adm.pending_amount }}
+        </p>
+
+        <h5>Payment History</h5>
+
+        {% if adm.payments %}
+        <table border="1" cellpadding="6">
+            <tr>
+                <th>Receipt No</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Mode</th>
+            </tr>
+            {% for p in adm.payments %}
+            <tr>
+                <!-- 🔒 Receipt shown as TEXT ONLY -->
+                <td>RCP-{{ "%06d"|format(p.id) }}</td>
+                <td>{{ p.payment_date }}</td>
+                <td>₹{{ p.amount }}</td>
+                <td>{{ p.payment_mode }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+            <p>No payments recorded.</p>
+        {% endif %}
+
+        <hr>
+    {% endfor %}
+{% else %}
+    <p>No admissions found.</p>
+{% endif %}
+
+</body>
+</html>

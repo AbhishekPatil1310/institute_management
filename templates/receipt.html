@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Receipt</title>
+</head>
+<body>
+
+<h2 style="text-align:center;">Sharada Academy</h2>
+<p style="text-align:center;">Payment Receipt</p>
+
+<hr>
+
+<p>
+    <strong>Receipt No:</strong> RCP-{{ "%06d"|format(payment.id) }}<br>
+    <strong>Date:</strong> {{ payment.payment_date }}
+</p>
+
+<hr>
+
+<h3>Student Details</h3>
+<p>
+    <strong>Name:</strong> {{ student.name }}<br>
+    <strong>Student ID:</strong> {{ student.student_id }}<br>
+    <strong>Mobile:</strong> {{ student.mobile }}
+</p>
+
+<hr>
+
+<h3>Batch Details</h3>
+<p>
+    <strong>Batch Code:</strong> {{ admission.batch.batch_code }}<br>
+    <strong>Course:</strong> {{ admission.batch.course_name }}
+</p>
+
+<hr>
+
+<h3>Payment Details</h3>
+
+<table border="1" cellpadding="8" width="100%">
+    <tr>
+        <th align="left">Total Fee</th>
+        <td>₹{{ admission.total_fee }}</td>
+    </tr>
+    <tr>
+        <th align="left">Paid This Time</th>
+        <td><strong>₹{{ payment.amount }}</strong></td>
+    </tr>
+    <tr>
+        <th align="left">Total Paid</th>
+        <td>₹{{ admission.paid_amount }}</td>
+    </tr>
+    <tr>
+        <th align="left">Pending Fee</th>
+        <td>₹{{ admission.pending_amount }}</td>
+    </tr>
+    <tr>
+        <th align="left">Payment Mode</th>
+        <td>{{ payment.payment_mode }}</td>
+    </tr>
+</table>
+
+<hr>
+
+<p>
+    This is a computer-generated receipt.<br>
+    No signature is required.
+</p>
+
+<br>
+
+<p>
+    ___________________________<br>
+    Authorized Signatory
+</p>
+
+<br>
+
+<button onclick="window.print()">Print Receipt</button>
+
+</body>
+</html>
