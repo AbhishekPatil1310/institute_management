@@ -179,7 +179,8 @@
             <input type="hidden" name="student_id" value="{{ student.id }}">
 
             <label>Select Batch</label><br>
-            <select name="batch_id" required onchange="this.form.submit()">
+            <select name="batch_id" required
+        onchange="this.form.action.value='preload'; this.form.submit();">
                 <option value="">-- Choose Batch --</option>
                 {% for batch in batches %}
                 <option value="{{ batch.id }}"
