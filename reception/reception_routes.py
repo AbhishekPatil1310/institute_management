@@ -9,6 +9,7 @@ from models import (
     Admission,
     FeePayment,
     BatchPaymentSource,
+    PaymentSource,
 )
 
 reception_bp = Blueprint("reception", __name__, url_prefix="/reception")
@@ -29,7 +30,7 @@ def dashboard():
     message = ""
     error = ""
 
-    new_admission_sources = {}
+    new_admission_sources = []
     existing_batch_sources = {}
 
     if request.method == "POST":
@@ -38,7 +39,7 @@ def dashboard():
 
         # Always reload student if available
         if student_id:
-            student = Student.query.get(student_id)
+            student = Student.query.get(int(student_id))
             if student:
                 admissions = Admission.query.filter_by(
                     student_id=student.id
@@ -67,40 +68,45 @@ def dashboard():
             received_in = request.form.get("received_in")
             remarks = request.form.get("remarks")
 
-            batch = Batch.query.get(batch_id)
-
-            existing_adm = Admission.query.filter_by(
-                student_id=student.id,
-                batch_id=batch.id,
-            ).first()
-
-            if existing_adm:
-                error = "Student is already admitted to this batch."
+            if not received_in:
+                error = "Payment method is required."
             else:
-                admission = Admission(
+                received_in = int(received_in)  # ✅ FIX: normalize type
+
+                batch = Batch.query.get(batch_id)
+
+                existing_adm = Admission.query.filter_by(
                     student_id=student.id,
                     batch_id=batch.id,
-                    total_fee=batch.total_fee,
-                    paid_amount=paid_amount,
-                    pending_amount=batch.total_fee - paid_amount,
-                    remarks=remarks,
-                    admission_date=date.today(),
-                    status="Completed"
-                    if paid_amount >= batch.total_fee
-                    else "Active",
-                )
-                db.session.add(admission)
-                db.session.commit()
+                ).first()
 
-                payment = FeePayment(
-                    admission_id=admission.id,
-                    amount=paid_amount,
-                    received_in=received_in,
-                )
-                db.session.add(payment)
-                db.session.commit()
+                if existing_adm:
+                    error = "Student is already admitted to this batch."
+                else:
+                    admission = Admission(
+                        student_id=student.id,
+                        batch_id=batch.id,
+                        total_fee=batch.total_fee,
+                        paid_amount=paid_amount,
+                        pending_amount=batch.total_fee - paid_amount,
+                        remarks=remarks,
+                        admission_date=date.today(),
+                        status="Completed"
+                        if paid_amount >= batch.total_fee
+                        else "Active",
+                    )
+                    db.session.add(admission)
+                    db.session.commit()
 
-                message = "Admission completed successfully."
+                    payment = FeePayment(
+                        admission_id=admission.id,
+                        amount=paid_amount,
+                        received_in=received_in,
+                    )
+                    db.session.add(payment)
+                    db.session.commit()
+
+                    message = "Admission completed successfully."
 
             admissions = Admission.query.filter_by(
                 student_id=student.id
@@ -114,26 +120,31 @@ def dashboard():
             paid_amount = int(request.form.get("paid_amount"))
             received_in = request.form.get("received_in")
 
-            admission = Admission.query.get(admission_id)
-
-            if paid_amount > admission.pending_amount:
-                error = f"Amount exceeds pending fee (₹{admission.pending_amount})"
+            if not received_in:
+                error = "Payment method is required."
             else:
-                payment = FeePayment(
-                    admission_id=admission.id,
-                    amount=paid_amount,
-                    received_in=received_in,
-                )
-                db.session.add(payment)
+                received_in = int(received_in)  # ✅ already correct, kept consistent
 
-                admission.paid_amount += paid_amount
-                admission.pending_amount -= paid_amount
+                admission = Admission.query.get(admission_id)
 
-                if admission.pending_amount == 0:
-                    admission.status = "Completed"
+                if paid_amount > admission.pending_amount:
+                    error = f"Amount exceeds pending fee (₹{admission.pending_amount})"
+                else:
+                    payment = FeePayment(
+                        admission_id=admission.id,
+                        amount=paid_amount,
+                        received_in=received_in,
+                    )
+                    db.session.add(payment)
 
-                db.session.commit()
-                message = "Payment recorded successfully."
+                    admission.paid_amount += paid_amount
+                    admission.pending_amount -= paid_amount
+
+                    if admission.pending_amount == 0:
+                        admission.status = "Completed"
+
+                    db.session.commit()
+                    message = "Payment recorded successfully."
 
             admissions = Admission.query.filter_by(
                 student_id=student.id
@@ -162,6 +173,12 @@ def dashboard():
             )
             existing_batch_sources[adm.batch_id] = sources
 
+    # ✅ CLEAN, SAFE LOOKUP MAP
+    payment_source_map = {
+        ps.id: ps
+        for ps in PaymentSource.query.all()
+    }
+
     return render_template(
         "reception_dashboard.html",
         student=student,
@@ -169,6 +186,7 @@ def dashboard():
         batches=batches,
         payment_sources=new_admission_sources,
         existing_batch_sources=existing_batch_sources,
+        payment_source_map=payment_source_map,
         message=message,
         error=error,
     )

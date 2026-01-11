@@ -4,40 +4,94 @@
     <meta charset="UTF-8">
     <title>Reception Dashboard</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f9; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
-        .payment-section { background-color: #fff9e6; border-left: 5px solid #ffcc00; padding: 15px; margin-top: 15px; }
-        .pay-box { background-color: #f0fff0; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-        th { background: #f8f8f8; }
-        .btn { padding: 8px 15px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
-        .btn-pay { background: #28a745; }
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .payment-section {
+            background-color: #fff9e6;
+            border-left: 5px solid #ffcc00;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .pay-box {
+            background-color: #f0fff0;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background: #f8f8f8;
+        }
+        .btn {
+            padding: 8px 15px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        .btn-pay {
+            background: #28a745;
+        }
     </style>
 </head>
-<body>
 
+<body>
 <div class="container">
+
     <h2>Reception Dashboard</h2>
     <nav><a href="/logout">Logout</a></nav>
     <hr>
 
+    <!-- SEARCH STUDENT -->
     <div class="card">
         <h3>Search Student</h3>
         <form method="POST">
             <input type="hidden" name="action" value="search">
             <label>Mobile Number</label><br>
-            <input type="text" name="mobile" value="{{ request.form.get('mobile', '') }}" placeholder="Enter phone number..." required>
+            <input type="text" name="mobile" value="{{ request.form.get('mobile', '') }}" required>
             <button type="submit" class="btn">Search</button>
         </form>
     </div>
 
-    {% if error %}<p style="color:red;"><strong>{{ error }}</strong></p>{% endif %}
-    {% if message %}<p style="color:green;"><strong>{{ message }}</strong></p>{% endif %}
+    {% if error %}
+        <p style="color:red;"><strong>{{ error }}</strong></p>
+    {% endif %}
+    {% if message %}
+        <p style="color:green;"><strong>{{ message }}</strong></p>
+    {% endif %}
 
     {% if student %}
 
+    <!-- STUDENT PROFILE -->
     <div class="card">
         <h3>Student Profile</h3>
         <p>
@@ -47,18 +101,19 @@
         </p>
     </div>
 
+    <!-- EXISTING ADMISSIONS -->
     <h3>Existing Admissions</h3>
     {% for adm in admissions %}
     <div class="card">
         <h4>Batch: {{ adm.batch.batch_code }} ({{ adm.batch.course_name }})</h4>
+
         <p>
-            <strong>Status:</strong> {{ adm.status }} | 
-            <strong>Total:</strong> ₹{{ adm.total_fee }} | 
-            <strong>Paid:</strong> ₹{{ adm.paid_amount }} | 
+            <strong>Status:</strong> {{ adm.status }} |
+            <strong>Total:</strong> ₹{{ adm.total_fee }} |
+            <strong>Paid:</strong> ₹{{ adm.paid_amount }} |
             <strong>Pending:</strong> <span style="color:red">₹{{ adm.pending_amount }}</span>
         </p>
 
-        <h5>Payment History</h5>
         {% if adm.payments %}
         <table>
             <tr>
@@ -73,8 +128,17 @@
                 <td>RCP-{{ "%06d"|format(p.id) }}</td>
                 <td>{{ p.payment_date }}</td>
                 <td>₹{{ p.amount }}</td>
-                <td>{{ p.received_in }}</td>
-                <td><a href="/reception/receipt/{{ p.id }}" target="_blank">View</a></td>
+                <td>
+                    {% set src = payment_source_map.get(p.received_in | int) %}
+                    {% if src %}
+                        {{ src.name }} ({{ src.mode }})
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/reception/receipt/{{ p.id }}" target="_blank">View</a>
+                </td>
             </tr>
             {% endfor %}
         </table>
@@ -83,27 +147,22 @@
         {% if adm.pending_amount > 0 %}
         <div class="pay-box">
             <strong>Pay Installment:</strong>
-            <form method="POST" style="display: inline-flex; gap: 10px; align-items: center; margin-top: 10px;">
+            <form method="POST" style="display:flex; gap:10px; margin-top:10px;">
                 <input type="hidden" name="action" value="pay_pending">
                 <input type="hidden" name="admission_id" value="{{ adm.id }}">
                 <input type="hidden" name="student_id" value="{{ student.id }}">
-                <input type="hidden" name="mobile" value="{{ student.mobile }}">
 
-                <input type="number" name="paid_amount" max="{{ adm.pending_amount }}" placeholder="Amount" required style="width: 100px;">
-                
+                <input type="number" name="paid_amount" max="{{ adm.pending_amount }}" required>
+
                 <select name="received_in" required>
                     <option value="">-- Method --</option>
-                    {% if existing_batch_sources[adm.batch_id] %}
-                        {% for ps in existing_batch_sources[adm.batch_id] %}
-                        <option value="{{ ps.payment_source.id }}">
-                            {{ ps.payment_source.name }} 
-                            {% if ps.priority == 1 %}(QR 1){% elif ps.priority == 2 %}(QR 2){% else %}(Cash){% endif %}
+                    {% for src in existing_batch_sources[adm.batch_id] %}
+                        <option value="{{ src.payment_source.id }}">
+                            {{ src.payment_source.name }} ({{ src.payment_source.mode }})
                         </option>
-                        {% endfor %}
-                    {% else %}
-                        <option disabled>No methods linked</option>
-                    {% endif %}
+                    {% endfor %}
                 </select>
+
                 <button type="submit" class="btn btn-pay">Record Payment</button>
             </form>
         </div>
@@ -111,57 +170,50 @@
     </div>
     {% endfor %}
 
-    <div class="card" style="background-color: #eefbff;">
+    <!-- NEW ADMISSION -->
+    <div class="card" style="background-color:#eefbff;">
         <h3>New Batch Admission</h3>
-        <form method="POST" id="newAdmissionForm">
-            <input type="hidden" name="action" id="formAction" value="new_admission">
+
+        <form method="POST">
+            <input type="hidden" name="action" value="new_admission">
             <input type="hidden" name="student_id" value="{{ student.id }}">
-            <input type="hidden" name="mobile" value="{{ student.mobile }}">
 
             <label>Select Batch</label><br>
-            <select name="batch_id" required onchange="document.getElementById('formAction').value='preload'; this.form.submit();">
+            <select name="batch_id" required onchange="this.form.submit()">
                 <option value="">-- Choose Batch --</option>
                 {% for batch in batches %}
-                <option value="{{ batch.id }}" {% if request.form.get('batch_id')|int == batch.id %}selected{% endif %}>
+                <option value="{{ batch.id }}"
+                    {% if request.form.get('batch_id')|int == batch.id %}selected{% endif %}>
                     {{ batch.batch_code }} - {{ batch.course_name }} (₹{{ batch.total_fee }})
                 </option>
                 {% endfor %}
             </select>
-            <br>
 
-            {% if request.form.get('batch_id') %}
+            {% if payment_sources %}
             <div class="payment-section">
                 <label>Paid Amount</label><br>
-                <input type="number" name="paid_amount" placeholder="Enter amount..." required>
-                <br><br>
+                <input type="number" name="paid_amount" required>
 
-                <label><strong>Select Payment Method for New Admission:</strong></label><br>
-                {% if payment_sources %}
-                    {% for ps in payment_sources %}
-                        <input type="radio" name="received_in" value="{{ ps.payment_source.id }}" required>
-                        {{ ps.payment_source.name }}
-                        {% if ps.priority == 1 %}(Primary QR){% elif ps.priority == 2 %}(Secondary QR){% else %}(Cash){% endif %}
-                        <br>
-                    {% endfor %}
-                {% else %}
-                    <p style="color:red;">No payment sources linked to this batch.</p>
-                {% endif %}
+                <br><br>
+                <label><strong>Payment Method</strong></label><br>
+                {% for src in payment_sources %}
+                    <input type="radio" name="received_in" value="{{ src.payment_source.id }}" required>
+                    {{ src.payment_source.name }} ({{ src.payment_source.mode }})<br>
+                {% endfor %}
 
                 <br>
                 <label>Remark (optional)</label><br>
-                <textarea name="remarks" placeholder="Concession details, etc." style="width:100%;"></textarea>
-                <br><br>
+                <textarea name="remarks" style="width:100%;"></textarea>
 
-                <button type="submit" class="btn" onclick="document.getElementById('formAction').value='new_admission'">Confirm Admission</button>
+                <br><br>
+                <button type="submit" class="btn">Confirm Admission</button>
             </div>
-            {% else %}
-            <p style="color: #666; font-style: italic; margin-top: 10px;">Select a batch above to enter payment details for a new course.</p>
             {% endif %}
         </form>
     </div>
 
     {% endif %}
-</div>
 
+</div>
 </body>
 </html>
