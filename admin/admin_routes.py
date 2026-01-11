@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, abort
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from datetime import datetime, date
@@ -22,7 +22,7 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 @login_required
 def dashboard():
     if current_user.role != "admin":
-        return "Access Denied", 403
+        abort(403)
 
     total_collection = db.session.query(
         func.sum(FeePayment.amount)
@@ -54,13 +54,105 @@ def dashboard():
 
 
 # -------------------------------------------------
-# BATCH CREATION
+# PAYMENT SOURCE MASTER
+# -------------------------------------------------
+@admin_bp.route("/payment-sources", methods=["GET", "POST"])
+@login_required
+def manage_payment_sources():
+    if current_user.role != "admin":
+        abort(403)
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        mode = request.form.get("mode")
+
+        if not name or not mode:
+            abort(400)
+
+        ps = PaymentSource(
+            name=name,
+            mode=mode,
+            qr_image_path=request.form.get("qr_image_path")
+            if mode == "QR"
+            else None,
+            is_active=True,
+        )
+        db.session.add(ps)
+        db.session.commit()
+
+    payment_sources = PaymentSource.query.all()
+    return render_template(
+        "admin_payment_sources.html",
+        payment_sources=payment_sources,
+    )
+
+
+# -------------------------------------------------
+# MULTI PAYMENT CONFIG (CORRECTED & SAFE)
+# -------------------------------------------------
+@admin_bp.route("/batch-payment-sources", methods=["GET", "POST"])
+@login_required
+def assign_payment_sources():
+    if current_user.role != "admin":
+        abort(403)
+
+    if request.method == "POST":
+        batch_id = request.form.get("batch_id")
+        payment_source_ids = request.form.getlist("payment_sources")
+
+        # HARD VALIDATION (non-negotiable)
+        if not batch_id:
+            abort(400, "Batch is required")
+
+        if not payment_source_ids:
+            abort(400, "At least one payment source is required")
+
+        batch_id = int(batch_id)
+
+        # Remove old config
+        BatchPaymentSource.query.filter_by(
+            batch_id=batch_id
+        ).delete()
+
+        # Normalize order → priority = index
+        for priority, ps_id in enumerate(payment_source_ids):
+            db.session.add(
+                BatchPaymentSource(
+                    batch_id=batch_id,
+                    payment_source_id=int(ps_id),
+                    priority=priority,
+                )
+            )
+
+        db.session.commit()
+        return redirect(url_for("admin.assign_payment_sources"))
+
+    batches = Batch.query.order_by(Batch.batch_code).all()
+    payment_sources = PaymentSource.query.filter_by(
+        is_active=True
+    ).order_by(PaymentSource.name).all()
+
+    mappings = BatchPaymentSource.query.order_by(
+        BatchPaymentSource.batch_id,
+        BatchPaymentSource.priority,
+    ).all()
+
+    return render_template(
+        "admin_batch_payment_sources.html",
+        batches=batches,
+        payment_sources=payment_sources,
+        mappings=mappings,
+    )
+
+
+# -------------------------------------------------
+# BATCH MANAGEMENT
 # -------------------------------------------------
 @admin_bp.route("/batches", methods=["GET", "POST"])
 @login_required
 def manage_batches():
     if current_user.role != "admin":
-        return "Access Denied", 403
+        abort(403)
 
     if request.method == "POST":
         new_batch = Batch(
@@ -80,106 +172,12 @@ def manage_batches():
         db.session.add(new_batch)
         db.session.commit()
 
-    batches = Batch.query.order_by(Batch.created_at.desc()).all()
-    return render_template("admin_batches.html", batches=batches)
-
-
-# -------------------------------------------------
-# PAYMENT SOURCE MASTER
-# -------------------------------------------------
-@admin_bp.route("/payment-sources", methods=["GET", "POST"])
-@login_required
-def manage_payment_sources():
-    if current_user.role != "admin":
-        return "Access Denied", 403
-
-    if request.method == "POST":
-        ps = PaymentSource(
-            name=request.form.get("name"),
-            mode=request.form.get("mode"),
-            qr_image_path=request.form.get("qr_image_path")
-            if request.form.get("mode") == "QR"
-            else None,
-            is_active=True,
-        )
-        db.session.add(ps)
-        db.session.commit()
-
-    payment_sources = PaymentSource.query.all()
-    return render_template(
-        "admin_payment_sources.html",
-        payment_sources=payment_sources,
-    )
-
-
-# -------------------------------------------------
-# PRIMARY / SECONDARY QR CONFIG (FINAL LOGIC)
-# -------------------------------------------------
-@admin_bp.route("/batch-payment-sources", methods=["GET", "POST"])
-@login_required
-def assign_payment_sources():
-    if current_user.role != "admin":
-        return "Access Denied", 403
-
-    if request.method == "POST":
-        batch_id = int(request.form.get("batch_id"))
-        primary_qr = request.form.get("primary_qr")
-        secondary_qrs = request.form.getlist("secondary_qrs")
-
-        # clear old config
-        BatchPaymentSource.query.filter_by(
-            batch_id=batch_id
-        ).delete()
-
-        # CASH (always allowed)
-        cash = PaymentSource.query.filter_by(mode="CASH").first()
-        if cash:
-            db.session.add(
-                BatchPaymentSource(
-                    batch_id=batch_id,
-                    payment_source_id=cash.id,
-                    priority=0,
-                )
-            )
-
-        # PRIMARY QR
-        db.session.add(
-            BatchPaymentSource(
-                batch_id=batch_id,
-                payment_source_id=int(primary_qr),
-                priority=1,
-            )
-        )
-
-        # SECONDARY QRs
-        for qr_id in secondary_qrs:
-            if qr_id != primary_qr:
-                db.session.add(
-                    BatchPaymentSource(
-                        batch_id=batch_id,
-                        payment_source_id=int(qr_id),
-                        priority=2,
-                    )
-                )
-
-        db.session.commit()
-        return redirect(url_for("admin.assign_payment_sources"))
-
-    batches = Batch.query.all()
-    qr_sources = PaymentSource.query.filter_by(
-        mode="QR", is_active=True
+    batches = Batch.query.order_by(
+        Batch.created_at.desc()
     ).all()
-
-    mappings = BatchPaymentSource.query.order_by(
-        BatchPaymentSource.batch_id,
-        BatchPaymentSource.priority,
-    ).all()
-
     return render_template(
-        "admin_batch_payment_sources.html",
-        batches=batches,
-        qr_sources=qr_sources,
-        mappings=mappings,
+        "admin_batches.html",
+        batches=batches
     )
 
 
@@ -190,7 +188,7 @@ def assign_payment_sources():
 @login_required
 def daily_report():
     if current_user.role != "admin":
-        return "Access Denied", 403
+        abort(403)
 
     selected_date = date.today()
 

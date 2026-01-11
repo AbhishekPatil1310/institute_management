@@ -14,6 +14,9 @@ from models import (
 reception_bp = Blueprint("reception", __name__, url_prefix="/reception")
 
 
+# -------------------------------------------------
+# RECEPTION DASHBOARD
+# -------------------------------------------------
 @reception_bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
@@ -25,24 +28,22 @@ def dashboard():
     batches = Batch.query.filter_by(status="Active").all()
     message = ""
     error = ""
-    
-    # This will hold payment sources for the "New Admission" dropdown
-    new_admission_sources = []
-    
-    # This dictionary will store payment sources for existing batches
-    # format: { batch_id: [list_of_sources] }
+
+    new_admission_sources = {}
     existing_batch_sources = {}
 
     if request.method == "POST":
         action = request.form.get("action")
         student_id = request.form.get("student_id")
 
-        # 1. ALWAYS RE-FETCH STUDENT if ID is present
+        # Always reload student if available
         if student_id:
             student = Student.query.get(student_id)
             if student:
-                admissions = Admission.query.filter_by(student_id=student.id).all()
-        
+                admissions = Admission.query.filter_by(
+                    student_id=student.id
+                ).all()
+
         # --------------------
         # SEARCH STUDENT
         # --------------------
@@ -53,7 +54,9 @@ def dashboard():
             if not student:
                 error = "No student record found. Ask student to fill admission form."
             else:
-                admissions = Admission.query.filter_by(student_id=student.id).all()
+                admissions = Admission.query.filter_by(
+                    student_id=student.id
+                ).all()
 
         # --------------------
         # NEW ADMISSION
@@ -68,7 +71,7 @@ def dashboard():
 
             existing_adm = Admission.query.filter_by(
                 student_id=student.id,
-                batch_id=batch.id
+                batch_id=batch.id,
             ).first()
 
             if existing_adm:
@@ -82,7 +85,9 @@ def dashboard():
                     pending_amount=batch.total_fee - paid_amount,
                     remarks=remarks,
                     admission_date=date.today(),
-                    status="Completed" if paid_amount >= batch.total_fee else "Active"
+                    status="Completed"
+                    if paid_amount >= batch.total_fee
+                    else "Active",
                 )
                 db.session.add(admission)
                 db.session.commit()
@@ -90,13 +95,16 @@ def dashboard():
                 payment = FeePayment(
                     admission_id=admission.id,
                     amount=paid_amount,
-                    received_in=received_in
+                    received_in=received_in,
                 )
                 db.session.add(payment)
                 db.session.commit()
-                message = "Admission completed successfully"
-            
-            admissions = Admission.query.filter_by(student_id=student.id).all()
+
+                message = "Admission completed successfully."
+
+            admissions = Admission.query.filter_by(
+                student_id=student.id
+            ).all()
 
         # --------------------
         # PAY PENDING FEE
@@ -114,37 +122,43 @@ def dashboard():
                 payment = FeePayment(
                     admission_id=admission.id,
                     amount=paid_amount,
-                    received_in=received_in
+                    received_in=received_in,
                 )
                 db.session.add(payment)
+
                 admission.paid_amount += paid_amount
                 admission.pending_amount -= paid_amount
+
                 if admission.pending_amount == 0:
                     admission.status = "Completed"
 
                 db.session.commit()
                 message = "Payment recorded successfully."
-            
-            admissions = Admission.query.filter_by(student_id=student.id).all()
 
-    # --- THE FIX: DYNAMICALLY FETCH SOURCES FOR ALL RELEVANT BATCHES ---
+            admissions = Admission.query.filter_by(
+                student_id=student.id
+            ).all()
 
-    # 1. Fetch sources for the "New Admission" dropdown selection
+    # -------------------------------------------------
+    # LOAD PAYMENT SOURCES
+    # -------------------------------------------------
+
     selected_batch_id = request.form.get("batch_id")
     if selected_batch_id:
         new_admission_sources = (
             BatchPaymentSource.query
             .filter_by(batch_id=int(selected_batch_id))
-            .order_by(BatchPaymentSource.priority).all()
+            .order_by(BatchPaymentSource.priority)
+            .all()
         )
 
-    # 2. Fetch sources for every batch the student is already in
     if student:
         for adm in admissions:
             sources = (
                 BatchPaymentSource.query
                 .filter_by(batch_id=adm.batch_id)
-                .order_by(BatchPaymentSource.priority).all()
+                .order_by(BatchPaymentSource.priority)
+                .all()
             )
             existing_batch_sources[adm.batch_id] = sources
 
@@ -153,8 +167,29 @@ def dashboard():
         student=student,
         admissions=admissions,
         batches=batches,
-        payment_sources=new_admission_sources, # For the bottom form
-        existing_batch_sources=existing_batch_sources, # For the pending forms
+        payment_sources=new_admission_sources,
+        existing_batch_sources=existing_batch_sources,
         message=message,
-        error=error
+        error=error,
+    )
+
+
+# -------------------------------------------------
+# RECEIPT VIEW (RECEPTION)
+# -------------------------------------------------
+@reception_bp.route("/receipt/<int:payment_id>")
+@login_required
+def view_receipt(payment_id):
+    if current_user.role not in ["reception", "admin"]:
+        return "Access Denied", 403
+
+    payment = FeePayment.query.get_or_404(payment_id)
+    admission = Admission.query.get_or_404(payment.admission_id)
+    student = Student.query.get_or_404(admission.student_id)
+
+    return render_template(
+        "receipt.html",
+        payment=payment,
+        admission=admission,
+        student=student,
     )
