@@ -1,0 +1,129 @@
+{
+  "version": "1.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "detailLevel": "All",
+  "tablePositions": [
+    {
+      "name": "Student",
+      "schemaName": "public",
+      "x": 376,
+      "y": 16
+    },
+    {
+      "name": "User",
+      "schemaName": "public",
+      "x": 16,
+      "y": 16
+    },
+    {
+      "name": "Batch",
+      "schemaName": "public",
+      "x": 376,
+      "y": 280
+    },
+    {
+      "name": "payment_sources",
+      "schemaName": "public",
+      "x": 376,
+      "y": 616
+    },
+    {
+      "name": "batch_payment_sources",
+      "schemaName": "public",
+      "x": 904,
+      "y": 408
+    },
+    {
+      "name": "Admission",
+      "schemaName": "public",
+      "x": 904,
+      "y": 16
+    },
+    {
+      "name": "FeePayment",
+      "schemaName": "public",
+      "x": 1416,
+      "y": 16
+    }
+  ],
+  "tableGroupCollapseStates": [],
+  "stickyNoteLayouts": [],
+  "referencePaths": [
+    {
+      "firstFieldNames": [
+        "batch_id"
+      ],
+      "firstTableName": "batch_payment_sources",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "id"
+      ],
+      "secondTableName": "Batch",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "payment_source_id"
+      ],
+      "firstTableName": "batch_payment_sources",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "id"
+      ],
+      "secondTableName": "payment_sources",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "student_id"
+      ],
+      "firstTableName": "Admission",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "id"
+      ],
+      "secondTableName": "Student",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "batch_id"
+      ],
+      "firstTableName": "Admission",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "id"
+      ],
+      "secondTableName": "Batch",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "admission_id"
+      ],
+      "firstTableName": "FeePayment",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "id"
+      ],
+      "secondTableName": "Admission",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    }
+  ]
+}

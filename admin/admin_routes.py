@@ -214,3 +214,44 @@ def daily_report():
         payments=payments,
         total_collection=total_collection,
     )
+# -------------------------------------------------
+# DELETE BATCH (ADMIN ONLY)
+# -------------------------------------------------
+@admin_bp.route("/batches/<int:batch_id>/delete", methods=["POST"])
+@login_required
+def delete_batch(batch_id):
+    if current_user.role != "admin":
+        abort(403)
+
+    batch = Batch.query.get_or_404(batch_id)
+
+    # HARD SAFETY: delete dependent records first
+    # 1. Remove batch-payment mappings
+    BatchPaymentSource.query.filter_by(
+        batch_id=batch.id
+    ).delete()
+
+    # 2. Get admissions linked to this batch
+    admissions = Admission.query.filter_by(
+        batch_id=batch.id
+    ).all()
+
+    admission_ids = [a.id for a in admissions]
+
+    # 3. Delete fee payments linked to those admissions
+    if admission_ids:
+        FeePayment.query.filter(
+            FeePayment.admission_id.in_(admission_ids)
+        ).delete(synchronize_session=False)
+
+    # 4. Delete admissions
+    Admission.query.filter_by(
+        batch_id=batch.id
+    ).delete()
+
+    # 5. Delete batch itself
+    db.session.delete(batch)
+
+    db.session.commit()
+
+    return redirect(url_for("admin.manage_batches"))

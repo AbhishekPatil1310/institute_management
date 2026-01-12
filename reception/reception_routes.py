@@ -84,6 +84,14 @@ def dashboard():
                 remarks = request.form.get("remarks")
 
                 batch = db.session.get(Batch, batch_id)
+                if not batch:
+                    error = "Selected batch no longer exists. Please reload the page."
+                else:
+                    existing_adm = Admission.query.filter_by(
+                        student_id=student.id,
+                        batch_id=batch.id,
+                    ).first()
+
 
                 existing_adm = Admission.query.filter_by(
                     student_id=student.id,
