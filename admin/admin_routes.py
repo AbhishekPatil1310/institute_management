@@ -24,33 +24,76 @@ def dashboard():
     if current_user.role != "admin":
         abort(403)
 
-    total_collection = db.session.query(
-        func.sum(FeePayment.amount)
-    ).scalar() or 0
+    # ---------------------------------------------
+    # Overall totals
+    # ---------------------------------------------
+    total_collection = (
+        db.session.query(func.coalesce(func.sum(FeePayment.amount), 0))
+        .scalar()
+    )
 
-    total_pending = db.session.query(
-        func.sum(Admission.pending_amount)
-    ).scalar() or 0
+    total_pending = (
+        db.session.query(func.coalesce(func.sum(Admission.pending_amount), 0))
+        .scalar()
+    )
 
+    # ---------------------------------------------
+    # Batch-wise summary
+    # ---------------------------------------------
     batch_stats = (
         db.session.query(
+            Batch.id.label("batch_id"),
             Batch.batch_code,
             Batch.course_name,
             func.count(Admission.id).label("student_count"),
-            func.sum(Admission.paid_amount).label("paid_total"),
-            func.sum(Admission.pending_amount).label("pending_total"),
+            func.coalesce(func.sum(Admission.paid_amount), 0).label("paid_total"),
+            func.coalesce(func.sum(Admission.pending_amount), 0).label("pending_total"),
         )
         .outerjoin(Admission, Admission.batch_id == Batch.id)
         .group_by(Batch.id)
+        .order_by(Batch.batch_code)
         .all()
     )
+
+    # ---------------------------------------------
+    # Payment breakdown per batch
+    # ---------------------------------------------
+    payment_rows = (
+    db.session.query(
+        Batch.id.label("batch_id"),
+        PaymentSource.name.label("method"),
+        func.sum(FeePayment.amount).label("amount"),
+    )
+    .join(Admission, Admission.id == FeePayment.admission_id)
+    .join(Batch, Batch.id == Admission.batch_id)
+    .join(
+        PaymentSource,
+        PaymentSource.id == FeePayment.received_in.cast(db.Integer),
+    )
+    .group_by(Batch.id, PaymentSource.name)
+    .all()
+)
+
+
+    # ---------------------------------------------
+    # Normalize for template
+    # ---------------------------------------------
+    payment_breakdown_map = {}
+
+    for row in payment_rows:
+        payment_breakdown_map.setdefault(row.batch_id, []).append({
+            "method": row.method,
+            "amount": row.amount,
+        })
 
     return render_template(
         "admin_dashboard.html",
         total_collection=total_collection,
         total_pending=total_pending,
         batch_stats=batch_stats,
+        payment_breakdown_map=payment_breakdown_map,
     )
+
 
 
 # -------------------------------------------------
@@ -255,3 +298,65 @@ def delete_batch(batch_id):
     db.session.commit()
 
     return redirect(url_for("admin.manage_batches"))
+
+
+from sqlalchemy import func
+
+# -------------------------------------------------
+# BATCH COLLECTION REPORT (ADMIN)
+# -------------------------------------------------
+@admin_bp.route("/batch-fee-report")
+@login_required
+def batch_fee_report():
+    if current_user.role != "admin":
+        abort(403)
+
+    # ---------------------------------------------
+    # Batch-wise totals (paid & pending)
+    # ---------------------------------------------
+    batch_totals = (
+        db.session.query(
+            Batch.id.label("batch_id"),
+            Batch.batch_code,
+            Batch.course_name,
+            func.coalesce(func.sum(Admission.paid_amount), 0).label("total_collected"),
+            func.coalesce(func.sum(Admission.pending_amount), 0).label("total_pending"),
+        )
+        .outerjoin(Admission, Admission.batch_id == Batch.id)
+        .group_by(Batch.id)
+        .order_by(Batch.batch_code)
+        .all()
+    )
+
+    # ---------------------------------------------
+    # Payment method breakdown per batch
+    # ---------------------------------------------
+    payment_breakdown = (
+        db.session.query(
+            Batch.id.label("batch_id"),
+            FeePayment.received_in.label("payment_method"),
+            func.sum(FeePayment.amount).label("amount"),
+        )
+        .join(Admission, Admission.id == FeePayment.admission_id)
+        .join(Batch, Batch.id == Admission.batch_id)
+        .group_by(Batch.id, FeePayment.received_in)
+        .order_by(Batch.id)
+        .all()
+    )
+
+    # ---------------------------------------------
+    # Normalize into dict for template
+    # ---------------------------------------------
+    breakdown_map = {}
+
+    for row in payment_breakdown:
+        breakdown_map.setdefault(row.batch_id, []).append({
+            "method": row.payment_method,
+            "amount": row.amount,
+        })
+
+    return render_template(
+        "admin_batch_fee_report.html",
+        batch_totals=batch_totals,
+        breakdown_map=breakdown_map,
+    )

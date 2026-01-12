@@ -1,8 +1,50 @@
-
 <!DOCTYPE html>
 <html>
 <head>
     <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        nav a {
+            margin-right: 10px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .sub-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sub-table td {
+            border: none;
+            padding: 3px 0;
+        }
+
+        .amount {
+            text-align: right;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 <body>
 
@@ -25,15 +67,16 @@
 
 <hr>
 
-<h3>Batch-wise Summary</h3>
+<h3>Batch-wise Summary (with Payment Breakdown)</h3>
 
-<table border="1" cellpadding="5">
+<table>
     <tr>
         <th>Batch Code</th>
         <th>Course</th>
         <th>Students</th>
-        <th>Collected</th>
-        <th>Pending</th>
+        <th>Total Collected</th>
+        <th>Total Pending</th>
+        <th>Payment Received (by Source)</th>
     </tr>
 
     {% for b in batch_stats %}
@@ -41,8 +84,23 @@
         <td>{{ b.batch_code }}</td>
         <td>{{ b.course_name }}</td>
         <td>{{ b.student_count or 0 }}</td>
-        <td>₹{{ b.paid_total or 0 }}</td>
-        <td>₹{{ b.pending_total or 0 }}</td>
+        <td class="amount">₹{{ b.paid_total or 0 }}</td>
+        <td class="amount">₹{{ b.pending_total or 0 }}</td>
+        <td>
+            {% set breakdown = payment_breakdown_map.get(b.batch_id, []) %}
+            {% if breakdown %}
+                <table class="sub-table">
+                    {% for row in breakdown %}
+                    <tr>
+                        <td>{{ row.method }}</td>
+                        <td class="amount">₹{{ row.amount }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <em>No payments</em>
+            {% endif %}
+        </td>
     </tr>
     {% endfor %}
 </table>

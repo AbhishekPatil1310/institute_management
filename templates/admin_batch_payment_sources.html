@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Batch Payment Configuration</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <style>
         * {
             margin: 0;
@@ -24,7 +25,7 @@
             margin: 0 auto;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
 
@@ -138,7 +139,7 @@
             background: white;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
             font-size: 15px;
         }
 
@@ -196,20 +197,21 @@
             body {
                 padding: 10px;
             }
-            
+
             .content {
                 padding: 20px;
             }
-            
+
             select[multiple] {
                 height: 160px;
             }
-            
+
             table {
                 font-size: 14px;
             }
-            
-            th, td {
+
+            th,
+            td {
                 padding: 12px 8px;
             }
         }
@@ -230,10 +232,14 @@
         });
     </script>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
             <h2>Admin – Batch Payment Configuration</h2>
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/admin/dashboard" class="back-link">⬅ Back to Dashboard</a>
         </div>
 
         <div class="content">
@@ -243,9 +249,9 @@
                         <label><strong>Select Batch</strong></label>
                         <select name="batch_id" required>
                             {% for b in batches %}
-                                <option value="{{ b.id }}">
-                                    {{ b.batch_code }} – {{ b.course_name }}
-                                </option>
+                            <option value="{{ b.id }}">
+                                {{ b.batch_code }} – {{ b.course_name }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -257,17 +263,11 @@
                         <p class="help-text">
                             Click to select multiple. Top to bottom = priority order.
                         </p>
-                        <select
-                            id="paymentSources"
-                            name="payment_sources"
-                            multiple
-                            size="6"
-                            required
-                        >
+                        <select id="paymentSources" name="payment_sources" multiple size="6" required>
                             {% for ps in payment_sources %}
-                                <option value="{{ ps.id }}">
-                                    {{ ps.name }} ({{ ps.mode }})
-                                </option>
+                            <option value="{{ ps.id }}">
+                                {{ ps.name }} ({{ ps.mode }})
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -298,10 +298,9 @@
                 </table>
             </div>
 
-            <div style="text-align: center; margin-top: 30px;">
-                <a href="/admin/dashboard" class="back-link">⬅ Back to Dashboard</a>
-            </div>
+
         </div>
     </div>
 </body>
+
 </html>
